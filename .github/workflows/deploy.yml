@@ -55,25 +55,70 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.2.2
 
-      - name: Check the secrets
-        # An empty secret reaches the VPS as an empty string, silently; a room
-        # signed with an empty secret, or a TURN relay with no secret, is worse
-        # than a failed deploy.
+      - name: Check the GitHub secrets
+        # GitHub holds only how to reach the server and Vault; everything the
+        # stack runs with comes from Vault (secret/apps/hashcode-visio).
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VISIO_PUBLIC_IP: ${{ secrets.VISIO_PUBLIC_IP }}
-          JWT_APP_SECRET: ${{ secrets.JWT_APP_SECRET }}
-          JICOFO_AUTH_PASSWORD: ${{ secrets.JICOFO_AUTH_PASSWORD }}
-          JVB_AUTH_PASSWORD: ${{ secrets.JVB_AUTH_PASSWORD }}
-          TURN_SECRET: ${{ secrets.TURN_SECRET }}
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+          VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
         run: |
           missing=0
-          for v in VPS_HOST VPS_USER VPS_SSH_KEY VISIO_PUBLIC_IP JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD TURN_SECRET; do
-            if [ -z "${!v}" ]; then echo "FATAL: secret $v is empty or missing"; missing=1; fi
+          for v in VPS_HOST VPS_USER VPS_SSH_KEY VAULT_ADDR VAULT_ROLE_ID VAULT_SECRET_ID; do
+            if [ -z "${!v}" ]; then echo "FATAL: GitHub secret $v is empty or missing"; missing=1; fi
           done
           exit $missing
+
+      - name: Fetch secrets from Vault
+        env:
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+          VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -sf --request POST \
+            --data "{\"role_id\":\"$VAULT_ROLE_ID\",\"secret_id\":\"$VAULT_SECRET_ID\"}" \
+            "$VAULT_ADDR/v1/auth/approle/login" | jq -r '.auth.client_token // empty') || true
+          if [ -z "${TOKEN:-}" ]; then
+            echo "FATAL: Vault login failed (VAULT_ADDR, VAULT_ROLE_ID or VAULT_SECRET_ID)"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          SECRET=$(curl -sf --header "X-Vault-Token: $TOKEN" \
+            "$VAULT_ADDR/v1/secret/data/apps/hashcode-visio" | jq -c '.data.data // empty') || true
+          if [ -z "${SECRET:-}" ]; then
+            echo "FATAL: could not read secret/apps/hashcode-visio (missing, or not in the role's policy)"
+            exit 1
+          fi
+
+          get() { echo "$SECRET" | jq -r --arg k "$1" '.[$k] // empty'; }
+          # Required: an empty one would start a server with no auth or no TURN
+          # secret, which is worse than a failed deploy.
+          missing=0
+          for k in VISIO_PUBLIC_IP JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD TURN_SECRET; do
+            if [ -z "$(get "$k")" ]; then echo "FATAL: Vault key $k is empty or missing"; missing=1; fi
+          done
+          [ "$missing" = 0 ] || exit 1
+
+          # Never shown in the logs, whatever prints them later.
+          for k in JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD TURN_SECRET; do
+            echo "::add-mask::$(get "$k")"
+          done
+
+          DOMAIN=$(get VISIO_DOMAIN); DOMAIN=${DOMAIN:-$VISIO_DOMAIN}
+          APP_ID=$(get JWT_APP_ID); APP_ID=${APP_ID:-rabotka}
+          umask 077
+          {
+            echo "VISIO_DOMAIN=$DOMAIN"
+            echo "VISIO_PUBLIC_IP=$(get VISIO_PUBLIC_IP)"
+            echo "JWT_APP_ID=$APP_ID"
+            for k in JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD TURN_SECRET; do
+              echo "$k=$(get "$k")"
+            done
+          } > "$RUNNER_TEMP/visio.env"
 
       - name: SSH key
         env:
@@ -104,21 +149,8 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
-          VISIO_PUBLIC_IP: ${{ secrets.VISIO_PUBLIC_IP }}
-          JWT_APP_SECRET: ${{ secrets.JWT_APP_SECRET }}
-          JICOFO_AUTH_PASSWORD: ${{ secrets.JICOFO_AUTH_PASSWORD }}
-          JVB_AUTH_PASSWORD: ${{ secrets.JVB_AUTH_PASSWORD }}
-          TURN_SECRET: ${{ secrets.TURN_SECRET }}
         run: |
-          {
-            echo "VISIO_DOMAIN=${VISIO_DOMAIN}"
-            echo "VISIO_PUBLIC_IP=${VISIO_PUBLIC_IP}"
-            echo "JWT_APP_ID=rabotka"
-            echo "JWT_APP_SECRET=${JWT_APP_SECRET}"
-            echo "JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD}"
-            echo "JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD}"
-            echo "TURN_SECRET=${TURN_SECRET}"
-          } | ssh -i ~/.ssh/deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" '
+          ssh -i ~/.ssh/deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" '
             set -e
             cd ~/hashcode-visio
             umask 077
@@ -130,7 +162,8 @@ jobs:
             docker compose pull --quiet
             docker compose up -d --remove-orphans
             docker compose ps
-          '
+          ' < "$RUNNER_TEMP/visio.env"
+          rm -f "$RUNNER_TEMP/visio.env"
 
   smoke-test:
     name: Smoke tests

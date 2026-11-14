@@ -2,7 +2,7 @@
 
 Our own Jitsi Meet for Rabotka's interview calls, at **https://visio.hashcode.digital**.
 
-It runs on the VPS set up by [hashcode-vps-infra](https://github.com/brx-hashcode/hashcode-vps-infra) and plugs into it like any app:
+It runs on its own server (6 GB), set up with [hashcode-vps-infra](https://github.com/brx-hashcode/hashcode-vps-infra)'s Traefik, and plugs into it like any app:
 - the call's web page joins the shared `hashcode-public` network;
 - the infra's Traefik serves it over HTTPS, with Let's Encrypt over Cloudflare DNS-01;
 - media and TURN bypass Traefik and are published on the host.
@@ -41,54 +41,29 @@ Locally, `rabotka-backend/docker-compose.yml` runs the same images on `https://l
 
 ## Before the first deploy
 
-**1. hashcode-vps-infra runs on the VPS.** Its Traefik and the `hashcode-public` network must exist.
+Follow **[DEPLOY.md](DEPLOY.md)**:
+1. the server runs hashcode-vps-infra's Traefik;
+2. DNS (`visio`, DNS only);
+3. firewall;
+4. Vault (`secret/apps/hashcode-visio` + AppRole);
+5. GitHub secrets;
+6. first deploy;
+7. Rabotka's `JITSI_APP_SECRET`.
 
-**2. DNS.** An A record `visio.hashcode.digital` → the VPS's IP, set to **DNS only** (grey cloud) in Cloudflare. Video and TURN cannot pass through the Cloudflare proxy. The certificate comes through DNS-01, so the setting doesn't affect it.
+**Where the secrets live:**
+- **Vault, `secret/apps/hashcode-visio`:** everything the stack runs with: `VISIO_PUBLIC_IP`, `JWT_APP_SECRET`, `JICOFO_AUTH_PASSWORD`, `JVB_AUTH_PASSWORD`, `TURN_SECRET` (plus optional `VISIO_DOMAIN`, `JWT_APP_ID`).
+- **GitHub:** only how to reach the server and Vault: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_PORT`, `VAULT_ADDR`, `VAULT_ROLE_ID`, `VAULT_SECRET_ID`, and optional `SLACK_WEBHOOK_URL`.
 
-**3. Firewall.** Open these on the VPS and in the hosting provider's firewall, on top of 80/443:
-
-| Port | For |
-|---|---|
-| `10000/udp` | Media (video bridge) |
-| `3478/udp`, `3478/tcp` | STUN/TURN |
-| `49160–49200/udp` | TURN relay |
-
-With ufw: `sudo ./scripts/firewall.sh` (after the first deploy has copied it to `~/hashcode-visio`).
-
-**4. GitHub secrets.** In this repo, under **Settings → Secrets and variables → Actions**:
-
-| Secret | Value |
-|---|---|
-| `VPS_HOST` | VPS IP or hostname (same as hashcode-vps-infra) |
-| `VPS_USER` | SSH user |
-| `VPS_SSH_KEY` | Private SSH key (full content) |
-| `VPS_PORT` | SSH port. Optional, `22` by default |
-| `VISIO_PUBLIC_IP` | The VPS's public IPv4, announced for media and TURN |
-| `JWT_APP_SECRET` | `openssl rand -hex 32`. **Also goes into Rabotka's Vault as `JITSI_APP_SECRET`** (develop and prod). |
-| `JICOFO_AUTH_PASSWORD` | `openssl rand -hex 24` |
-| `JVB_AUTH_PASSWORD` | `openssl rand -hex 24` |
-| `TURN_SECRET` | `openssl rand -hex 32` |
-| `SLACK_WEBHOOK_URL` | Optional: deploy result in Slack |
-
-The domain defaults to `visio.hashcode.digital`. To change it, set the repository **variable** `VISIO_DOMAIN`.
-
-To generate and set the internal secrets in one go (they never show on screen):
-
-```bash
-for s in JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD; do openssl rand -hex 24 | gh secret set "$s" -R brx-hashcode/hashcode-visio; done
-openssl rand -hex 32 | gh secret set TURN_SECRET -R brx-hashcode/hashcode-visio
-```
-
-Set `JWT_APP_SECRET` yourself, so you can put the same value in Vault.
+`JWT_APP_SECRET` must equal `JITSI_APP_SECRET` in Rabotka's own Vault entries (develop and production), or every call is refused.
 
 ## Deploying
 
 Every push to `main`, or a manual run (**Actions → Deploy Visio → Run workflow**), runs these steps:
 
 1. **Validate** the compose file and the scripts. This also runs on pull requests.
-2. **Check that every required secret is set.** An empty one fails the deploy instead of starting a server with no auth.
+2. **Log in to Vault** (AppRole) and read `secret/apps/hashcode-visio`. A missing or empty required key fails the deploy instead of starting a server with no auth.
 3. **Copy** `docker-compose.yml`, `.env.example`, `config/` and `scripts/` to `~/hashcode-visio` on the VPS with rsync. There's no git checkout on the box, so nothing there can drift or conflict.
-4. **Write `.env`** from the secrets (mode 600), check that `hashcode-public` exists, then `docker compose pull && docker compose up -d --remove-orphans`.
+4. **Write `.env`** from Vault (mode 600), check that `hashcode-public` exists, then `docker compose pull && docker compose up -d --remove-orphans`.
 5. **Smoke tests:**
    - the page answers over HTTPS;
    - `external_api.js` is served;

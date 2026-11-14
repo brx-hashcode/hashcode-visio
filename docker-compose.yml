@@ -1,7 +1,7 @@
 # hashcode-visio — our own Jitsi for Rabotka's interview calls, with its
 # whiteboard, shared notes and TURN relay.
 #
-# It runs on the VPS set up by hashcode-vps-infra and plugs into it like any
+# It runs on its own server, set up with hashcode-vps-infra, and plugs into it like any
 # app: jitsi-web joins the shared `hashcode-public` network and declares its
 # route with Traefik labels; that Traefik terminates HTTPS (Let's Encrypt,
 # DNS-01) for ${VISIO_DOMAIN}. Media (UDP 10000) and TURN (3478, 49160-49200)
