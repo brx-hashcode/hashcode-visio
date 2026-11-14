@@ -1,0 +1,204 @@
+# hashcode-visio — our own Jitsi for Rabotka's interview calls, with its
+# whiteboard, shared notes and TURN relay.
+#
+# It runs on the VPS set up by hashcode-vps-infra and plugs into it like any
+# app: jitsi-web joins the shared `hashcode-public` network and declares its
+# route with Traefik labels; that Traefik terminates HTTPS (Let's Encrypt,
+# DNS-01) for ${VISIO_DOMAIN}. Media (UDP 10000) and TURN (3478, 49160-49200)
+# bypass Traefik and are published on the host directly.
+#
+#   docker compose up -d
+#
+# Rooms need a token: Rabotka's API signs it (HS256) with JWT_APP_SECRET, which
+# must equal the JITSI_APP_SECRET it reads from Vault.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Every Jitsi component reads the same settings; each takes what it needs.
+x-jitsi-env: &jitsi-env
+  TZ: UTC
+  PUBLIC_URL: https://${VISIO_DOMAIN}
+  # TLS ends at the infra Traefik; jitsi-web serves HTTP behind it.
+  DISABLE_HTTPS: "1"
+  ENABLE_HTTP_REDIRECT: "0"
+  ENABLE_LETSENCRYPT: "0"
+  # JWT: no room opens without a token from Rabotka's API.
+  ENABLE_AUTH: "1"
+  AUTH_TYPE: jwt
+  ENABLE_GUESTS: "0"
+  JWT_APP_ID: ${JWT_APP_ID:-rabotka}
+  JWT_APP_SECRET: ${JWT_APP_SECRET}
+  # Internal accounts between Prosody, Jicofo and the video bridge.
+  JICOFO_AUTH_PASSWORD: ${JICOFO_AUTH_PASSWORD}
+  JVB_AUTH_PASSWORD: ${JVB_AUTH_PASSWORD}
+  XMPP_SERVER: xmpp.meet.jitsi
+  XMPP_BOSH_URL_BASE: http://xmpp.meet.jitsi:5280
+  # The address browsers send media to (UDP 10000).
+  JVB_ADVERTISE_IPS: ${VISIO_PUBLIC_IP}
+  # Whiteboard (Excalidraw) and shared notes (Etherpad), proxied by jitsi-web.
+  WHITEBOARD_COLLAB_SERVER_URL_BASE: http://whiteboard.meet.jitsi
+  ETHERPAD_URL_BASE: http://etherpad.meet.jitsi:9001
+  # STUN/TURN from coturn below. The client always asks Prosody for them, and
+  # TURN gets candidates on strict mobile or office networks through.
+  STUN_HOST: ${VISIO_DOMAIN}
+  STUN_PORT: "3478"
+  TURN_HOST: ${VISIO_DOMAIN}
+  TURN_PORT: "3478"
+  TURN_TRANSPORT: udp,tcp
+  TURN_CREDENTIALS: ${TURN_SECRET}
+
+services:
+  web:
+    image: jitsi/web:stable-11031
+    container_name: visio-web
+    restart: unless-stopped
+    logging: *logging
+    environment: *jitsi-env
+    volumes:
+      - web_config:/config
+      # The HashCode logo in the call, not « jitsi » (appended at start).
+      - ./config/custom-interface_config.js:/config/custom-interface_config.js:ro
+    depends_on:
+      - jvb
+      - whiteboard
+      - etherpad
+    networks:
+      hashcode-public: {}
+      visio:
+        aliases:
+          - meet.jitsi
+    labels:
+      - "traefik.enable=true"
+      # On two networks: Traefik must reach it through the shared one.
+      - "traefik.docker.network=hashcode-public"
+      - "traefik.http.routers.hashcode-visio.rule=Host(`${VISIO_DOMAIN}`)"
+      - "traefik.http.routers.hashcode-visio.entrypoints=websecure"
+      - "traefik.http.routers.hashcode-visio.tls.certresolver=letsencrypt"
+      - "traefik.http.services.hashcode-visio.loadbalancer.server.port=80"
+
+  prosody:
+    image: jitsi/prosody:stable-11031
+    container_name: visio-prosody
+    restart: unless-stopped
+    logging: *logging
+    environment: *jitsi-env
+    expose:
+      - "5222"
+      - "5280"
+      - "5347"
+    volumes:
+      - prosody_config:/config
+      - prosody_plugins:/prosody-plugins-custom
+    networks:
+      visio:
+        aliases:
+          - xmpp.meet.jitsi
+
+  jicofo:
+    image: jitsi/jicofo:stable-11031
+    container_name: visio-jicofo
+    restart: unless-stopped
+    logging: *logging
+    environment: *jitsi-env
+    volumes:
+      - jicofo_config:/config
+    depends_on:
+      - prosody
+    networks:
+      - visio
+
+  jvb:
+    image: jitsi/jvb:stable-11031
+    container_name: visio-jvb
+    restart: unless-stopped
+    logging: *logging
+    environment: *jitsi-env
+    ports:
+      # Media, straight from the browsers: never through Traefik or a proxy.
+      - "10000:10000/udp"
+    volumes:
+      - jvb_config:/config
+    depends_on:
+      - prosody
+    networks:
+      - visio
+
+  turn:
+    image: coturn/coturn:4.18.0
+    container_name: visio-turn
+    restart: unless-stopped
+    logging: *logging
+    command:
+      - --listening-port=3478
+      - --fingerprint
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET}
+      - --realm=${VISIO_DOMAIN}
+      - --external-ip=${VISIO_PUBLIC_IP}
+      - --min-port=49160
+      - --max-port=49200
+      - --no-tls
+      - --no-dtls
+      - --no-cli
+      - --no-multicast-peers
+      # Never relay into private networks (this box's containers included).
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=100.64.0.0-100.127.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "49160-49200:49160-49200/udp"
+    networks:
+      - visio
+
+  whiteboard:
+    image: jitsi/excalidraw-backend:2026.10.0
+    container_name: visio-whiteboard
+    restart: unless-stopped
+    logging: *logging
+    networks:
+      visio:
+        aliases:
+          - whiteboard.meet.jitsi
+
+  etherpad:
+    image: etherpad/etherpad:3.3.7
+    container_name: visio-etherpad
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      TITLE: Notes partagées
+      DEFAULT_PAD_TEXT: " "
+      SUPPRESS_ERRORS_IN_PAD_TEXT: "true"
+    volumes:
+      # Etherpad's skin stylesheet, plus one rule hiding its « deletion token » box.
+      - ./config/etherpad-pad.css:/opt/etherpad-lite/src/static/skins/colibris/pad.css:ro
+    networks:
+      visio:
+        aliases:
+          - etherpad.meet.jitsi
+
+volumes:
+  web_config:
+  prosody_config:
+  prosody_plugins:
+  jicofo_config:
+  jvb_config:
+
+networks:
+  # The infra's Traefik network (hashcode-vps-infra).
+  hashcode-public:
+    external: true
+  # Jitsi's own components talk here, by their meet.jitsi aliases.
+  visio:
+    name: visio
+    driver: bridge
