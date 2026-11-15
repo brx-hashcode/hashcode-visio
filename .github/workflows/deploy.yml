@@ -263,8 +263,12 @@ jobs:
             exit 1
           fi
 
-      - name: The HashCode logo replaces « jitsi »
-        run: curl -sf --max-time 15 "https://${VISIO_DOMAIN}/interface_config.js" | grep -q "DEFAULT_LOGO_URL = 'https://avatars.githubusercontent.com"
+      - name: HashCode Visio replaces « Jitsi Meet »
+        run: |
+          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/interface_config.js" | grep -q "APP_NAME = 'HashCode Visio'"
+          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/" | grep -q "<title>HashCode Visio</title>"
+          curl -sf --max-time 15 -o /dev/null "https://${VISIO_DOMAIN}/images/hashcode-logo.png"
+          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/lang/main-fr.json" | grep -q '"headerTitle": "HashCode Visio"'
 
       - name: Slack notify success
         if: success()

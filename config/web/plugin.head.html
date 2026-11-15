@@ -1,0 +1,316 @@
+<!--
+  HashCode Visio: the welcome page in HashCode's look (hashcode.digital):
+  near-black, the 60px grid, orange #ff6a00, Inter.
+  Included in every page (index.html, SSI), so every rule is scoped to
+  .welcome: the call screen is left as Jitsi draws it.
+  Selectors follow jitsi/web:stable-11031; check this page after a bump.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  .welcome {
+    --hc-bg: #0a0a0a;
+    --hc-card: #121212;
+    --hc-card-hover: #181818;
+    --hc-line: rgba(255, 255, 255, 0.08);
+    --hc-text: #f5f5f5;
+    --hc-muted: rgba(245, 245, 245, 0.6);
+    --hc-orange: #ff6a00;
+    --hc-orange-hover: #e65f00;
+
+    background: var(--hc-bg);
+    color: var(--hc-text);
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    justify-content: flex-start;
+  }
+
+  /* The header: the grid and a warm glow, no photo. */
+  .welcome .header {
+    background: var(--hc-bg);
+    padding: 0 16px;
+  }
+  .welcome .header .header-image {
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 60% 55% at 50% 0%, rgba(255, 106, 0, 0.18), transparent 70%),
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 100% 100%, 60px 60px, 60px 60px;
+    background-position: center top;
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    pointer-events: none;
+  }
+  .welcome .header .header-container {
+    margin-top: 132px;
+    max-width: 720px;
+    padding-bottom: 56px;
+  }
+  .welcome .header .header-watermark-container {
+    margin-top: calc(28px - 132px);
+  }
+  .welcome .welcome-watermark .watermark.leftwatermark {
+    width: 44px;
+    height: 44px;
+    background-size: contain;
+    background-position: left center;
+  }
+  /* The name beside the mark. */
+  .welcome .welcome-watermark > div > a::after {
+    content: "HashCode Visio";
+    position: absolute;
+    left: 56px;
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    color: var(--hc-text);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .welcome .welcome-watermark > div > a {
+    position: relative;
+    display: block;
+  }
+  .welcome .welcome-page-settings {
+    top: calc(34px - 132px);
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+  }
+
+  .welcome .header .header-text-title {
+    color: var(--hc-text);
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+  }
+  /* The eyebrow above the name, as on hashcode.digital. */
+  .welcome .header .header-text-title::before {
+    content: "Visioconférence · HashCode";
+    display: block;
+    margin-bottom: 20px;
+    color: var(--hc-orange);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .welcome .header .header-text-subtitle {
+    color: var(--hc-muted);
+    font-size: 1.125rem;
+    font-weight: 400;
+    line-height: 1.6;
+    margin: 20px 0 40px;
+    max-width: 520px;
+  }
+
+  /* Room name + start, one flat bar. */
+  .welcome .header #enter_room {
+    max-width: 560px;
+  }
+  .welcome .header #enter_room .join-meeting-container {
+    background: var(--hc-card);
+    border: 1px solid var(--hc-line);
+    border-radius: 4px;
+    padding: 6px;
+    gap: 6px;
+    color: var(--hc-text);
+  }
+  .welcome .header #enter_room .enter-room-input-container {
+    padding-right: 0;
+  }
+  .welcome .header #enter_room .enter-room-input-container .enter-room-input {
+    background: transparent;
+    color: var(--hc-text);
+    font-family: inherit;
+    font-size: 1rem;
+    height: 52px;
+    padding-left: 14px;
+  }
+  .welcome .header #enter_room .enter-room-input-container .enter-room-input.focus-visible {
+    outline: none;
+  }
+  .welcome .header #enter_room .join-meeting-container:focus-within {
+    border-color: rgba(255, 106, 0, 0.6);
+    box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.15);
+  }
+  .welcome .header ::placeholder {
+    color: rgba(245, 245, 245, 0.35);
+  }
+  .welcome .welcome-page-button {
+    background: var(--hc-orange);
+    border-radius: 2px;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    padding: 0 28px;
+    white-space: nowrap;
+  }
+  .welcome .welcome-page-button:hover {
+    background: var(--hc-orange-hover);
+  }
+  .welcome .welcome-page-button:focus-within {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  /* Below the header: recent meetings, then our three points. */
+  .welcome .welcome-cards-container {
+    color: var(--hc-text);
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    padding: 8px 16px 0;
+    width: 100%;
+    max-width: 752px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  .welcome .welcome-card-column {
+    max-width: none;
+    width: 100%;
+  }
+  .welcome .welcome-card--blue {
+    background: var(--hc-card);
+    border: 1px solid var(--hc-line);
+    border-radius: 4px;
+  }
+  .welcome .tab-container .tab-content {
+    height: auto;
+    max-height: 260px;
+    min-height: 120px;
+  }
+  .welcome .tab-container .tab-buttons,
+  .welcome .tab-container .tab-buttons [role=tab] {
+    background: transparent;
+    color: var(--hc-muted);
+  }
+  .welcome .tab-container .tab-buttons [role=tab][aria-selected=true] {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--hc-text);
+  }
+  .welcome .meetings-list {
+    color: var(--hc-text);
+    padding: 4px;
+  }
+  .welcome .meetings-list .item {
+    background: transparent;
+    border-radius: 2px;
+    color: var(--hc-text);
+  }
+  .welcome .meetings-list .item:hover {
+    background: var(--hc-card-hover);
+  }
+  .welcome .meetings-list .item .left-column,
+  .welcome .meetings-list .item .date,
+  .welcome .meetings-list .item .duration {
+    color: var(--hc-muted);
+  }
+  .welcome .meetings-list .item .title {
+    color: var(--hc-text);
+    font-weight: 600;
+  }
+  .welcome .meetings-list .meetings-list-empty .description {
+    color: var(--hc-muted);
+  }
+  .welcome .meetings-list .meetings-list-empty-image svg *[fill="#fff"],
+  .welcome .meetings-list .meetings-list-empty-image svg *[fill="white"] {
+    fill: var(--hc-card);
+  }
+  .welcome .meetings-list .meetings-list-empty-button {
+    color: var(--hc-orange);
+  }
+  .welcome .meetings-list .meetings-list-empty-button svg {
+    fill: var(--hc-orange);
+  }
+
+  .welcome .welcome-page-content {
+    width: 100%;
+  }
+  .hc-points {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--hc-line);
+    border: 1px solid var(--hc-line);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .hc-points li {
+    background: var(--hc-bg);
+    padding: 24px;
+  }
+  .hc-points .hc-n {
+    display: block;
+    color: var(--hc-orange);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    margin-bottom: 12px;
+  }
+  .hc-points strong {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .hc-points p {
+    color: var(--hc-muted);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    margin: 0;
+  }
+  .hc-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--hc-line);
+    color: rgba(245, 245, 245, 0.45);
+    font-size: 0.8125rem;
+    margin-top: 64px;
+    padding: 24px 0 40px;
+  }
+  .hc-foot a {
+    color: var(--hc-text);
+    text-decoration: none;
+  }
+  .hc-foot a:hover {
+    color: var(--hc-orange);
+  }
+
+  @media (max-width: 640px) {
+    .welcome .header .header-container {
+      margin-top: 112px;
+      padding-bottom: 40px;
+    }
+    .welcome .header .header-watermark-container {
+      margin-top: calc(24px - 112px);
+    }
+    .welcome .welcome-page-settings {
+      top: calc(30px - 112px);
+    }
+    .welcome .header .header-text-subtitle {
+      font-size: 1rem;
+    }
+    .welcome .header #enter_room {
+      width: 100%;
+    }
+    .welcome .header #enter_room .join-meeting-container {
+      flex-direction: column;
+    }
+    .welcome .welcome-page-button {
+      height: 48px;
+    }
+    .hc-points {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

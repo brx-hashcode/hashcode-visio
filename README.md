@@ -27,10 +27,18 @@ This repo only holds the visio stack.
 
 All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi) together.
 
-`config/` holds three files:
-- **`custom-config.js`** keeps the captions in French and hides the « translate into » list (Vosk doesn't translate).
-- **`custom-interface_config.js`** replaces the « jitsi » logo with HashCode's (the brx-hashcode GitHub avatar, linking to hashcode.digital) and names the app « Rabotka ».
+`config/` holds:
+- **`custom-config.js`** keeps the captions in French, hides the « translate into » list (Vosk doesn't translate), and closes the call at once when it ends.
+- **`custom-interface_config.js`** names the app « HashCode Visio », puts HashCode's mark in the call and on the welcome page (linking to hashcode.digital), and drops Jitsi's app-store footer.
 - **`etherpad-pad.css`** is Etherpad's skin stylesheet plus one rule hiding its « pad deletion token » box, which Etherpad 3 has no setting for.
+- **`web/`**, the welcome page in HashCode's look:
+  - `plugin.head.html`: Inter and the stylesheet, every rule scoped to `.welcome`, so the call screen is untouched;
+  - `welcomePageAdditionalContent.html`: the three points and the footer under the room field;
+  - `title.html`: the tab title, description and icon;
+  - `hashcode-logo.png`: the mark;
+  - `hashcode-branding.sh`: runs at each start and writes « HashCode Visio » and the tagline into Jitsi's translations and its PWA manifest.
+
+  The stylesheet follows the class names of `jitsi/web:stable-11031`. **After bumping Jitsi, open the welcome page and check it.**
 
 ## How Rabotka uses it
 

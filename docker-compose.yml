@@ -80,10 +80,17 @@ services:
     environment: *jitsi-env
     volumes:
       - web_config:/config
-      # The HashCode logo in the call, not « jitsi » (appended at start).
+      # The name, HashCode's mark and the welcome page options (appended at start).
       - ./config/custom-interface_config.js:/config/custom-interface_config.js:ro
       # Captions in French, without the « translate into » list.
       - ./config/custom-config.js:/config/custom-config.js:ro
+      # HashCode Visio: the welcome page's look, texts and mark (config/web/).
+      - ./config/web/plugin.head.html:/usr/share/jitsi-meet/plugin.head.html:ro
+      - ./config/web/title.html:/usr/share/jitsi-meet/title.html:ro
+      - ./config/web/welcomePageAdditionalContent.html:/usr/share/jitsi-meet/static/welcomePageAdditionalContent.html:ro
+      - ./config/web/hashcode-logo.png:/usr/share/jitsi-meet/images/hashcode-logo.png:ro
+      # Renames « Jitsi Meet » in the translations and the PWA manifest at start.
+      - ./config/web/hashcode-branding.sh:/etc/cont-init.d/20-hashcode-branding:ro
     depends_on:
       - jvb
       - whiteboard
