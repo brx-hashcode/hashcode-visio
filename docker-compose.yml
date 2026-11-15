@@ -230,9 +230,11 @@ services:
       - visio
 
   vosk:
-    # Built here: the Vosk server with the small French model (vosk/Dockerfile).
+    # The Vosk server with the small French model (vosk/Dockerfile). The deploy
+    # builds it in GitHub Actions and the server pulls VOSK_IMAGE from GHCR;
+    # `build` is only for a local `docker compose up --build`.
     build: ./vosk
-    image: hashcode-visio-vosk:small-fr-0.22
+    image: ${VOSK_IMAGE:-hashcode-visio-vosk:small-fr-0.22}
     container_name: visio-vosk
     restart: unless-stopped
     logging: *logging

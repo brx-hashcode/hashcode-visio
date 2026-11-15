@@ -67,10 +67,11 @@ Follow **[DEPLOY.md](DEPLOY.md)**:
 Every push to `main`, or a manual run (**Actions → Deploy Visio → Run workflow**), runs these steps:
 
 1. **Validate** the compose file and the scripts. This also runs on pull requests.
-2. **Log in to Vault** (AppRole) and read `secret/apps/hashcode-visio`. A missing or empty required key fails the deploy instead of starting a server with no auth.
-3. **Copy** `docker-compose.yml`, `.env.example`, `config/` and `scripts/` to `~/hashcode-visio` on the VPS with rsync. There's no git checkout on the box, so nothing there can drift or conflict.
-4. **Write `.env`** from Vault (mode 600), check that `dokploy-network` exists, then `docker compose pull && docker compose up -d --remove-orphans`.
-5. **Smoke tests:**
+2. **Build Vosk** (the one image we build) in GitHub Actions and push it to GHCR as `hashcode-visio-vosk:small-fr-0.22-<hash of vosk/>`, with a registry build cache, as rabotka-backend does. When `vosk/` hasn't changed, that tag already exists and the build is skipped.
+3. **Log in to Vault** (AppRole) and read `secret/apps/hashcode-visio`. A missing or empty required key fails the deploy instead of starting a server with no auth.
+4. **Copy** `docker-compose.yml`, `.env.example`, `config/` and `scripts/` to `~/hashcode-visio` on the VPS with rsync. There's no git checkout on the box, so nothing there can drift or conflict.
+5. **Write `.env`** from Vault (mode 600), check that `dokploy-network` exists, log in to GHCR with the run's token, `docker compose pull` (only changed layers download), log out, then `docker compose up -d --no-build --remove-orphans`. Nothing is built on the server.
+6. **Smoke tests:**
    - the page answers over HTTPS;
    - `external_api.js` is served;
    - tokens are still checked (JWT on, no anonymous domain);
