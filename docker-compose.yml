@@ -112,6 +112,9 @@ services:
         aliases:
           - meet.jitsi
     labels:
+      # A hash of config/, set by the deploy: compose recreates a container
+      # when its settings change, never when a mounted file's content does.
+      - "digital.hashcode.config=${VISIO_CONFIG_HASH:-local}"
       - "traefik.enable=true"
       # On two networks: Traefik must reach it through the shared one.
       - "traefik.docker.network=dokploy-network"
@@ -217,6 +220,8 @@ services:
     container_name: visio-etherpad
     restart: unless-stopped
     logging: *logging
+    labels:
+      - "digital.hashcode.config=${VISIO_CONFIG_HASH:-local}"
     environment:
       TITLE: Notes partagées
       DEFAULT_PAD_TEXT: " "

@@ -176,6 +176,9 @@ jobs:
             echo "VISIO_PUBLIC_IP=$(get VISIO_PUBLIC_IP)"
             echo "JWT_APP_ID=$APP_ID"
             echo "VOSK_IMAGE=${{ needs.build-vosk.outputs.image }}"
+            # Changes with any file in config/, so the containers mounting
+            # them are recreated and pick the new content up.
+            echo "VISIO_CONFIG_HASH=$(find config -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-12)"
             for k in JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD JIGASI_TRANSCRIBER_PASSWORD TURN_SECRET; do
               echo "$k=$(get "$k")"
             done
@@ -275,7 +278,10 @@ jobs:
           curl -sf --max-time 15 -o /dev/null "https://${VISIO_DOMAIN}/images/hashcode-logo.png"
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/lang/main-fr.json" | grep -q '"headerTitle": "HashCode Meet"'
           # English is compiled into the bundle: patched, under its own ?v=.
-          grep -q 'app.bundle.min.js?v=[0-9]*hc[0-9]*"' index.html
+          # The bundle that page loads is the patched one: versioned translations.
+          bundle=$(grep -o 'libs/app.bundle.min.js?v=[0-9]*hc[0-9]*' index.html | head -1)
+          test -n "$bundle"
+          curl -sf --max-time 30 "https://${VISIO_DOMAIN}/$bundle" | grep -q 'lang/{{ns}}-{{lng}}.json?v=hc'
           # The page after « Quitter » (config.enableClosePage).
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/static/close2.html" | grep -q "Vous avez quitté la réunion"
 
