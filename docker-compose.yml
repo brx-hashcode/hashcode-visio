@@ -89,6 +89,11 @@ services:
       - ./config/web/title.html:/usr/share/jitsi-meet/title.html:ro
       - ./config/web/welcomePageAdditionalContent.html:/usr/share/jitsi-meet/static/welcomePageAdditionalContent.html:ro
       - ./config/web/hashcode-logo.png:/usr/share/jitsi-meet/images/hashcode-logo.png:ro
+      # Search and sharing: the share card image, robots.txt (welcome page
+      # only, never the rooms) and the sitemap.
+      - ./config/web/og-image.png:/usr/share/jitsi-meet/images/og-image.png:ro
+      - ./config/web/robots.txt:/usr/share/jitsi-meet/robots.txt:ro
+      - ./config/web/sitemap.xml:/usr/share/jitsi-meet/sitemap.xml:ro
       # Renames « Jitsi Meet » in the translations and the PWA manifest at start.
       - ./config/web/hashcode-branding.sh:/etc/cont-init.d/20-hashcode-branding:ro
     depends_on:

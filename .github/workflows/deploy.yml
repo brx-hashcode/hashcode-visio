@@ -266,7 +266,12 @@ jobs:
       - name: HashCode Visio replaces « Jitsi Meet »
         run: |
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/interface_config.js" | grep -q "APP_NAME = 'HashCode Visio'"
-          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/" | grep -q "<title>HashCode Visio</title>"
+          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/" > index.html
+          grep -q "<title>HashCode Visio" index.html
+          grep -q 'property="og:image" content="https://visio.hashcode.digital/images/og-image.png"' index.html
+          curl -sf --max-time 15 -o /dev/null "https://${VISIO_DOMAIN}/images/og-image.png"
+          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/robots.txt" | grep -q "^Sitemap: "
+          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/sitemap.xml" | grep -q "<loc>"
           curl -sf --max-time 15 -o /dev/null "https://${VISIO_DOMAIN}/images/hashcode-logo.png"
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/lang/main-fr.json" | grep -q '"headerTitle": "HashCode Visio"'
 

@@ -1,0 +1,17 @@
+# HashCode Visio: only the welcome page is indexed. Rooms (/<name>) are
+# private meetings and stay out of search. The assets the page needs to render
+# are open, so search engines see it as visitors do.
+User-agent: *
+Allow: /$
+Allow: /css/
+Allow: /libs/
+Allow: /images/
+Allow: /static/
+Allow: /fonts/
+Allow: /lang/
+Allow: /config.js
+Allow: /interface_config.js
+Allow: /manifest.json
+Disallow: /
+
+Sitemap: https://visio.hashcode.digital/sitemap.xml

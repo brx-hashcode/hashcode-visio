@@ -34,7 +34,9 @@ All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi)
 - **`web/`**, the welcome page in HashCode's look:
   - `plugin.head.html`: Inter and the stylesheet, every rule scoped to `.welcome`, so the call screen is untouched;
   - `welcomePageAdditionalContent.html`: the three points and the footer under the room field;
-  - `title.html`: the tab title, description and icon;
+  - `title.html`: title, description, canonical, share card (Open Graph and X, with `og-image.png`) and structured data (schema.org `WebApplication`), on every page;
+  - `og-image.png`: the 1200×630 share card, rendered from `og/og-image.html` (the command to regenerate it is in that file);
+  - `robots.txt` and `sitemap.xml`: only the welcome page is indexed; rooms stay out of search;
   - `hashcode-logo.png`: the mark;
   - `hashcode-branding.sh`: runs at each start and writes « HashCode Visio » and the tagline into Jitsi's translations and its PWA manifest.
 
