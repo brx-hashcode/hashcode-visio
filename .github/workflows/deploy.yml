@@ -184,14 +184,14 @@ jobs:
       - name: Rabotka's embed script is served
         run: curl -sf --max-time 15 "https://${VISIO_DOMAIN}/external_api.js" | grep -q JitsiMeetExternalAPI
 
-      - name: Rooms need a token (JWT auth on)
-        # With JWT on there is no anonymous domain: nobody opens a room without
-        # a token from Rabotka's API.
+      - name: Tokens are checked, and rooms open without one
+        # Open to anyone (JWT_ALLOW_EMPTY), but a token is still verified when
+        # an app sends one: the JWT domain stays, with no anonymous domain.
         run: |
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/config.js" > config.js
           grep -q "config.hosts.domain" config.js
           if grep -q "anonymousdomain" config.js; then
-            echo "FATAL: anonymous rooms are open (JWT auth is off)"
+            echo "FATAL: JWT auth is off: app tokens (moderator, captions) are ignored"
             exit 1
           fi
 

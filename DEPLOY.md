@@ -145,12 +145,12 @@ The workflow:
 2. logs in to Vault and checks every required key;
 3. copies the stack to `~/hashcode-visio` and writes `.env` (mode 600);
 4. starts the stack;
-5. smoke-tests HTTPS, the embed script, closed anonymous rooms and the logo.
+5. smoke-tests HTTPS, the embed script, token checking and the logo.
 
 Check:
 
 - https://visio.hashcode.digital opens over a valid certificate;
-- opening `https://visio.hashcode.digital/test` without a token is refused (« Authentication required »).
+- opening `https://visio.hashcode.digital/test` joins the room straight away, with no « Authentification requise » box.
 
 ---
 

@@ -1,6 +1,6 @@
 # hashcode-visio
 
-Our own Jitsi Meet for Rabotka's interview calls, at **https://visio.hashcode.digital**.
+Our own Jitsi Meet, open to anyone, at **https://visio.hashcode.digital**. Rabotka's interview calls are one app using it.
 
 It runs on its own server, which runs [Dokploy](https://dokploy.com) (at dokploy.hashcode.digital), and plugs into Dokploy's Traefik like any app there:
 - the call's web page joins `dokploy-network`;
@@ -41,7 +41,7 @@ All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi)
   - `context.user`: the person's name and email, and `moderator` (true for the business);
   - `context.features.transcription: true` for the business only: only it can turn the captions on, and everyone sees them.
 - **The embed:** `rabotka-business` embeds the call with `@jitsi/react-sdk` (`JitsiMeeting`, `domain=visio.hashcode.digital`) with that token.
-- **No token, no room:** without a valid token the server refuses the room. The smoke test checks that anonymous rooms stay closed.
+- **Open to anyone:** a room opens without a token (`JWT_ALLOW_EMPTY`), and the first person in moderates. Rabotka is one app using it: its token names the person, makes the business moderator and turns the captions on. A token with a wrong signature is still refused.
 
 Locally, `rabotka-backend/docker-compose.yml` runs the same images on `https://localhost:8443`, with a self-signed certificate. That's for development; this repo is for the server.
 
@@ -73,7 +73,7 @@ Every push to `main`, or a manual run (**Actions → Deploy Visio → Run workfl
 5. **Smoke tests:**
    - the page answers over HTTPS;
    - `external_api.js` is served;
-   - anonymous rooms are closed (JWT on);
+   - tokens are still checked (JWT on, no anonymous domain);
    - the HashCode logo is in place;
    - then Slack gets the result.
 
