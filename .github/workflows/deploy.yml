@@ -156,9 +156,9 @@ jobs:
             cd ~/hashcode-visio
             umask 077
             cat > .env
-            # Dokploy's Traefik serves the call page; its network must exist.
+            # The Traefik of Dokploy serves the call page: its network must exist.
             if ! docker network inspect dokploy-network >/dev/null 2>&1; then
-              echo "FATAL: dokploy-network is missing: Dokploy (and its Traefik) must run on this box."
+              echo "FATAL: dokploy-network is missing: Dokploy and its Traefik must run on this box."
               exit 1
             fi
             docker compose pull --quiet --ignore-buildable
