@@ -13,8 +13,9 @@
 #
 #   docker compose up -d
 #
-# Rooms need a token: Rabotka's API signs it (HS256) with JWT_APP_SECRET, which
-# must equal the JITSI_APP_SECRET it reads from Vault.
+# Anyone can open a room. An app's token (Rabotka's API signs it, HS256, with
+# JWT_APP_SECRET = the JITSI_APP_SECRET it reads from Vault) adds the name,
+# moderator rights and captions.
 
 x-logging: &logging
   driver: json-file
@@ -30,9 +31,13 @@ x-jitsi-env: &jitsi-env
   DISABLE_HTTPS: "1"
   ENABLE_HTTP_REDIRECT: "0"
   ENABLE_LETSENCRYPT: "0"
-  # JWT: no room opens without a token from Rabotka's API.
+  # Open to anyone: a room opens without a token (JWT_ALLOW_EMPTY), and the
+  # first one in moderates. Apps such as Rabotka still send a signed token,
+  # which names the person, makes them moderator and turns on the captions
+  # (context.features.transcription).
   ENABLE_AUTH: "1"
   AUTH_TYPE: jwt
+  JWT_ALLOW_EMPTY: "1"
   ENABLE_GUESTS: "0"
   JWT_APP_ID: ${JWT_APP_ID:-rabotka}
   JWT_APP_SECRET: ${JWT_APP_SECRET}
@@ -160,9 +165,9 @@ services:
       - --external-ip=${VISIO_PUBLIC_IP}
       - --min-port=49160
       - --max-port=49200
+      # coturn 4.18: DTLS and the admin CLI are off unless turned on (the old
+      # --no-dtls / --no-cli flags are gone and stop the server at start).
       - --no-tls
-      - --no-dtls
-      - --no-cli
       - --no-multicast-peers
       # Never relay into private networks (this box's containers included).
       - --denied-peer-ip=0.0.0.0-0.255.255.255
