@@ -1,11 +1,15 @@
 # hashcode-visio — our own Jitsi for Rabotka's interview calls, with its
 # whiteboard, shared notes and TURN relay.
 #
-# It runs on its own server, set up with hashcode-vps-infra, and plugs into it like any
-# app: jitsi-web joins the shared `hashcode-public` network and declares its
-# route with Traefik labels; that Traefik terminates HTTPS (Let's Encrypt,
-# DNS-01) for ${VISIO_DOMAIN}. Media (UDP 10000) and TURN (3478, 49160-49200)
-# bypass Traefik and are published on the host directly.
+# It runs on its own server, which runs Dokploy, and is reached the way the
+# main VPS is: a Cloudflare tunnel (cloudflared, public hostnames set in the
+# Zero Trust dashboard) sends ${VISIO_DOMAIN} to Dokploy's Traefik on
+# http://localhost:80. Cloudflare holds the certificate; ports 80/443 are closed
+# to the internet (docker-block-ports.service), so Traefik never issues one.
+# jitsi-web joins `dokploy-network` and declares its route with Traefik labels.
+#
+# Media (UDP 10000) and TURN (3478, 49160-49200) can't pass through the tunnel:
+# they are published on the host and reached on VISIO_PUBLIC_IP directly.
 #
 #   docker compose up -d
 #
@@ -22,7 +26,7 @@ x-logging: &logging
 x-jitsi-env: &jitsi-env
   TZ: UTC
   PUBLIC_URL: https://${VISIO_DOMAIN}
-  # TLS ends at the infra Traefik; jitsi-web serves HTTP behind it.
+  # TLS ends at Cloudflare; the tunnel and Traefik carry HTTP to jitsi-web.
   DISABLE_HTTPS: "1"
   ENABLE_HTTP_REDIRECT: "0"
   ENABLE_LETSENCRYPT: "0"
@@ -52,10 +56,12 @@ x-jitsi-env: &jitsi-env
   JIGASI_TRANSCRIBER_VOSK_URL: ws://vosk.meet.jitsi:2700
   JIGASI_TRANSCRIBER_ENABLE_SAVING: "0"
   # STUN/TURN from coturn below. The client always asks Prosody for them, and
-  # TURN gets candidates on strict mobile or office networks through.
-  STUN_HOST: ${VISIO_DOMAIN}
+  # TURN gets candidates on strict mobile or office networks through. On the
+  # IP, not ${VISIO_DOMAIN}: that name resolves to Cloudflare (the tunnel),
+  # which carries no UDP and no TURN.
+  STUN_HOST: ${VISIO_PUBLIC_IP}
   STUN_PORT: "3478"
-  TURN_HOST: ${VISIO_DOMAIN}
+  TURN_HOST: ${VISIO_PUBLIC_IP}
   TURN_PORT: "3478"
   TURN_TRANSPORT: udp,tcp
   TURN_CREDENTIALS: ${TURN_SECRET}
@@ -78,17 +84,19 @@ services:
       - whiteboard
       - etherpad
     networks:
-      hashcode-public: {}
+      dokploy-network: {}
       visio:
         aliases:
           - meet.jitsi
     labels:
       - "traefik.enable=true"
       # On two networks: Traefik must reach it through the shared one.
-      - "traefik.docker.network=hashcode-public"
+      - "traefik.docker.network=dokploy-network"
+      # Dokploy's Traefik, `web` entrypoint only: the tunnel arrives on
+      # http://localhost:80 and Cloudflare already served HTTPS. No
+      # certresolver: Let's Encrypt can't reach this box (80/443 closed).
       - "traefik.http.routers.hashcode-visio.rule=Host(`${VISIO_DOMAIN}`)"
-      - "traefik.http.routers.hashcode-visio.entrypoints=websecure"
-      - "traefik.http.routers.hashcode-visio.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.hashcode-visio.entrypoints=web"
       - "traefik.http.services.hashcode-visio.loadbalancer.server.port=80"
 
   prosody:
@@ -237,8 +245,8 @@ volumes:
   transcriber_config:
 
 networks:
-  # The infra's Traefik network (hashcode-vps-infra).
-  hashcode-public:
+  # Dokploy's Traefik network (created by Dokploy's install).
+  dokploy-network:
     external: true
   # Jitsi's own components talk here, by their meet.jitsi aliases.
   visio:

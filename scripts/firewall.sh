@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Opens what the visio needs besides 80/443 (already open for Traefik).
+# Opens what the visio needs on the server's IP: media and TURN. Web traffic
+# comes through the Cloudflare tunnel, not these ports.
 # Run as root on the VPS: sudo ./scripts/firewall.sh
 
 ufw allow 10000/udp comment 'visio: media (jvb)'

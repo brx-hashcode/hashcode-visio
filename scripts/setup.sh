@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Bootstrap — run once on the VPS, in ~/hashcode-visio, after hashcode-vps-infra
-# is up (its Traefik and the hashcode-public network must exist).
+# Bootstrap by hand, in ~/hashcode-visio, on a box running Dokploy (its
+# Traefik and the dokploy-network must exist). The GitHub workflow does the
+# same on every push to main; this is only for a manual start.
 
-echo "==> Checking the infra network..."
-if ! docker network inspect hashcode-public >/dev/null 2>&1; then
-  echo "    hashcode-public is missing: start hashcode-vps-infra first."
+echo "==> Checking Dokploy's network..."
+if ! docker network inspect dokploy-network >/dev/null 2>&1; then
+  echo "    dokploy-network is missing: install Dokploy first."
   exit 1
 fi
 

@@ -156,8 +156,9 @@ jobs:
             cd ~/hashcode-visio
             umask 077
             cat > .env
-            if ! docker network inspect hashcode-public >/dev/null 2>&1; then
-              echo "FATAL: hashcode-public is missing: hashcode-vps-infra must run on this box first."
+            # Dokploy's Traefik serves the call page; its network must exist.
+            if ! docker network inspect dokploy-network >/dev/null 2>&1; then
+              echo "FATAL: dokploy-network is missing: Dokploy (and its Traefik) must run on this box."
               exit 1
             fi
             docker compose pull --quiet --ignore-buildable
