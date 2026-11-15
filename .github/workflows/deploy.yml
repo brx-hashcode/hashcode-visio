@@ -37,6 +37,7 @@ jobs:
           JWT_APP_SECRET=ci
           JICOFO_AUTH_PASSWORD=ci
           JVB_AUTH_PASSWORD=ci
+          JIGASI_TRANSCRIBER_PASSWORD=ci
           TURN_SECRET=ci
           EOF
           docker compose config --quiet
@@ -98,13 +99,13 @@ jobs:
           # Required: an empty one would start a server with no auth or no TURN
           # secret, which is worse than a failed deploy.
           missing=0
-          for k in VISIO_PUBLIC_IP JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD TURN_SECRET; do
+          for k in VISIO_PUBLIC_IP JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD JIGASI_TRANSCRIBER_PASSWORD TURN_SECRET; do
             if [ -z "$(get "$k")" ]; then echo "FATAL: Vault key $k is empty or missing"; missing=1; fi
           done
           [ "$missing" = 0 ] || exit 1
 
           # Never shown in the logs, whatever prints them later.
-          for k in JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD TURN_SECRET; do
+          for k in JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD JIGASI_TRANSCRIBER_PASSWORD TURN_SECRET; do
             echo "::add-mask::$(get "$k")"
           done
 
@@ -115,7 +116,7 @@ jobs:
             echo "VISIO_DOMAIN=$DOMAIN"
             echo "VISIO_PUBLIC_IP=$(get VISIO_PUBLIC_IP)"
             echo "JWT_APP_ID=$APP_ID"
-            for k in JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD TURN_SECRET; do
+            for k in JWT_APP_SECRET JICOFO_AUTH_PASSWORD JVB_AUTH_PASSWORD JIGASI_TRANSCRIBER_PASSWORD TURN_SECRET; do
               echo "$k=$(get "$k")"
             done
           } > "$RUNNER_TEMP/visio.env"
@@ -141,7 +142,7 @@ jobs:
           SSH="ssh -i $HOME/.ssh/deploy -p $VPS_PORT"
           $SSH "$VPS_USER@$VPS_HOST" 'mkdir -p ~/hashcode-visio'
           rsync -az --delete --exclude .env -e "$SSH" \
-            docker-compose.yml .env.example config scripts \
+            docker-compose.yml .env.example config scripts vosk \
             "$VPS_USER@$VPS_HOST:hashcode-visio/"
 
       - name: Write .env and start
@@ -159,8 +160,9 @@ jobs:
               echo "FATAL: hashcode-public is missing: hashcode-vps-infra must run on this box first."
               exit 1
             fi
-            docker compose pull --quiet
-            docker compose up -d --remove-orphans
+            docker compose pull --quiet --ignore-buildable
+            # vosk is built here (small French model); cached after the first time.
+            docker compose up -d --build --remove-orphans
             docker compose ps
           ' < "$RUNNER_TEMP/visio.env"
           rm -f "$RUNNER_TEMP/visio.env"

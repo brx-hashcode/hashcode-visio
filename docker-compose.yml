@@ -42,6 +42,15 @@ x-jitsi-env: &jitsi-env
   # Whiteboard (Excalidraw) and shared notes (Etherpad), proxied by jitsi-web.
   WHITEBOARD_COLLAB_SERVER_URL_BASE: http://whiteboard.meet.jitsi
   ETHERPAD_URL_BASE: http://etherpad.meet.jitsi:9001
+  # Captions (« Sous-titres »): Jigasi transcribes on Vosk, below. Nothing is
+  # saved; the text only reaches the people in the call.
+  ENABLE_TRANSCRIPTIONS: "1"
+  JIGASI_TRANSCRIBER_PASSWORD: ${JIGASI_TRANSCRIBER_PASSWORD}
+  # Jigasi refuses to start without it, even as a transcriber only.
+  JIGASI_XMPP_PASSWORD: ${JIGASI_TRANSCRIBER_PASSWORD}
+  JIGASI_TRANSCRIBER_CUSTOM_SERVICE: org.jitsi.jigasi.transcription.VoskTranscriptionService
+  JIGASI_TRANSCRIBER_VOSK_URL: ws://vosk.meet.jitsi:2700
+  JIGASI_TRANSCRIBER_ENABLE_SAVING: "0"
   # STUN/TURN from coturn below. The client always asks Prosody for them, and
   # TURN gets candidates on strict mobile or office networks through.
   STUN_HOST: ${VISIO_DOMAIN}
@@ -62,6 +71,8 @@ services:
       - web_config:/config
       # The HashCode logo in the call, not « jitsi » (appended at start).
       - ./config/custom-interface_config.js:/config/custom-interface_config.js:ro
+      # Captions in French, without the « translate into » list.
+      - ./config/custom-config.js:/config/custom-config.js:ro
     depends_on:
       - jvb
       - whiteboard
@@ -187,12 +198,43 @@ services:
         aliases:
           - etherpad.meet.jitsi
 
+  # Captions: Jigasi joins the call as a hidden transcriber when the business
+  # turns « Sous-titres » on, and sends each voice to Vosk (French).
+  transcriber:
+    image: jitsi/jigasi:stable-11031
+    container_name: visio-transcriber
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      <<: *jitsi-env
+      JIGASI_MODE: transcriber
+    volumes:
+      - transcriber_config:/config
+    depends_on:
+      - prosody
+      - vosk
+    networks:
+      - visio
+
+  vosk:
+    # Built here: the Vosk server with the small French model (vosk/Dockerfile).
+    build: ./vosk
+    image: hashcode-visio-vosk:small-fr-0.22
+    container_name: visio-vosk
+    restart: unless-stopped
+    logging: *logging
+    networks:
+      visio:
+        aliases:
+          - vosk.meet.jitsi
+
 volumes:
   web_config:
   prosody_config:
   prosody_plugins:
   jicofo_config:
   jvb_config:
+  transcriber_config:
 
 networks:
   # The infra's Traefik network (hashcode-vps-infra).

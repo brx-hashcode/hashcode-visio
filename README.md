@@ -20,10 +20,13 @@ This repo only holds the visio stack.
 | `turn` | `coturn/coturn:4.18.0` | STUN/TURN for candidates on strict mobile or office networks. **3478 udp/tcp**, relay **49160–49200/udp**. |
 | `whiteboard` | `jitsi/excalidraw-backend:2026.10.0` | The whiteboard in the call. |
 | `etherpad` | `etherpad/etherpad:3.3.7` | « Document partagé » in the call. |
+| `transcriber` | `jitsi/jigasi:stable-11031` | Captions (« Sous-titres »): joins the call as a hidden participant when the business turns them on. |
+| `vosk` | built from `vosk/Dockerfile` (`kaldi-vosk-server` + `vosk-model-small-fr-0.22`) | French speech-to-text for the captions. Nothing is saved. |
 
-All images are pinned: bump them deliberately, all four Jitsi ones together.
+All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi) together.
 
-`config/` holds two branding files:
+`config/` holds three files:
+- **`custom-config.js`** keeps the captions in French and hides the « translate into » list (Vosk doesn't translate).
 - **`custom-interface_config.js`** replaces the « jitsi » logo with HashCode's (the brx-hashcode GitHub avatar, linking to hashcode.digital) and names the app « Rabotka ».
 - **`etherpad-pad.css`** is Etherpad's skin stylesheet plus one rule hiding its « pad deletion token » box, which Etherpad 3 has no setting for.
 
@@ -33,7 +36,8 @@ All images are pinned: bump them deliberately, all four Jitsi ones together.
   - `iss: rabotka` (= `JWT_APP_ID`) and `aud: jitsi`;
   - `sub: visio.hashcode.digital`;
   - `room`: that interview's room only;
-  - `context.user`: the person's name and email, and `moderator` (true for the business).
+  - `context.user`: the person's name and email, and `moderator` (true for the business);
+  - `context.features.transcription: true` for the business only: only it can turn the captions on, and everyone sees them.
 - **The embed:** `rabotka-business` embeds the call with `@jitsi/react-sdk` (`JitsiMeeting`, `domain=visio.hashcode.digital`) with that token.
 - **No token, no room:** without a valid token the server refuses the room. The smoke test checks that anonymous rooms stay closed.
 
@@ -51,7 +55,7 @@ Follow **[DEPLOY.md](DEPLOY.md)**:
 7. Rabotka's `JITSI_APP_SECRET`.
 
 **Where the secrets live:**
-- **Vault, `secret/apps/hashcode-visio`:** everything the stack runs with: `VISIO_PUBLIC_IP`, `JWT_APP_SECRET`, `JICOFO_AUTH_PASSWORD`, `JVB_AUTH_PASSWORD`, `TURN_SECRET` (plus optional `VISIO_DOMAIN`, `JWT_APP_ID`).
+- **Vault, `secret/apps/hashcode-visio`:** everything the stack runs with: `VISIO_PUBLIC_IP`, `JWT_APP_SECRET`, `JICOFO_AUTH_PASSWORD`, `JVB_AUTH_PASSWORD`, `JIGASI_TRANSCRIBER_PASSWORD`, `TURN_SECRET` (plus optional `VISIO_DOMAIN`, `JWT_APP_ID`).
 - **GitHub:** only how to reach the server and Vault: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_PORT`, `VAULT_ADDR`, `VAULT_ROLE_ID`, `VAULT_SECRET_ID`, and optional `SLACK_WEBHOOK_URL`.
 
 `JWT_APP_SECRET` must equal `JITSI_APP_SECRET` in Rabotka's own Vault entries (develop and production), or every call is refused.

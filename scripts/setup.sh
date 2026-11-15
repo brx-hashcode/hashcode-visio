@@ -30,6 +30,6 @@ echo "      49160-49200/udp     TURN relay"
 echo "    With ufw: sudo ./scripts/firewall.sh"
 
 echo "==> Starting the stack..."
-docker compose pull
-docker compose up -d
+docker compose pull --ignore-buildable
+docker compose up -d --build
 echo "==> Done: https://$(grep '^VISIO_DOMAIN=' .env | cut -d= -f2)"

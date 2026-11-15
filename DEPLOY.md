@@ -68,6 +68,7 @@ Under the `secret` engine, create **`apps/hashcode-visio`** with these keys:
 | `JWT_APP_SECRET` | `openssl rand -hex 32`. **The same value goes into Rabotka (step 7).** | yes |
 | `JICOFO_AUTH_PASSWORD` | `openssl rand -hex 24` | yes |
 | `JVB_AUTH_PASSWORD` | `openssl rand -hex 24` | yes |
+| `JIGASI_TRANSCRIBER_PASSWORD` | `openssl rand -hex 24` | yes |
 | `TURN_SECRET` | `openssl rand -hex 32` | yes |
 | `VISIO_DOMAIN` | `visio.hashcode.digital` | no, that's the default |
 | `JWT_APP_ID` | `rabotka` | no, that's the default |
@@ -158,4 +159,4 @@ After that, the old `JAAS_*` keys in Rabotka's Vault can be deleted.
    1. Change it in `apps/hashcode-visio` **and** as `JITSI_APP_SECRET` in both Rabotka entries.
    2. Redeploy the visio, then both backends.
    3. Calls already open keep running; new ones need the new value on both sides.
-2. **The others** (`JICOFO_AUTH_PASSWORD`, `JVB_AUTH_PASSWORD`, `TURN_SECRET`): change them in Vault and re-run the workflow. They're used only inside this server.
+2. **The others** (`JICOFO_AUTH_PASSWORD`, `JVB_AUTH_PASSWORD`, `JIGASI_TRANSCRIBER_PASSWORD`, `TURN_SECRET`): change them in Vault and re-run the workflow. They're used only inside this server.
