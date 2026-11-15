@@ -1,4 +1,4 @@
-# HashCode Visio: only the welcome page is indexed. Rooms (/<name>) are
+# HashCode Meet: only the welcome page is indexed. Rooms (/<name>) are
 # private meetings and stay out of search. The assets the page needs to render
 # are open, so search engines see it as visitors do.
 User-agent: *

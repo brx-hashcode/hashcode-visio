@@ -28,8 +28,8 @@ This repo only holds the visio stack.
 All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi) together.
 
 `config/` holds:
-- **`custom-config.js`** keeps the captions in French, hides the « translate into » list (Vosk doesn't translate), and closes the call at once when it ends.
-- **`custom-interface_config.js`** names the app « HashCode Visio », puts HashCode's mark in the call and on the welcome page (linking to hashcode.digital), and drops Jitsi's app-store footer.
+- **`custom-config.js`** keeps the captions in French, hides the « translate into » list (Vosk doesn't translate), closes an embedded call at once when it ends, and sends a person who leaves straight to the close page.
+- **`custom-interface_config.js`** names the app « HashCode Meet », puts HashCode's mark in the call and on the welcome page (linking to hashcode.digital), and drops Jitsi's app-store footer.
 - **`etherpad-pad.css`** is Etherpad's skin stylesheet plus one rule hiding its « pad deletion token » box, which Etherpad 3 has no setting for.
 - **`web/`**, the welcome page in HashCode's look:
   - `plugin.head.html`: Inter and the stylesheet, every rule scoped to `.welcome`, so the call screen is untouched;
@@ -37,8 +37,10 @@ All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi)
   - `title.html`: title, description, canonical, share card (Open Graph and X, with `og-image.png`) and structured data (schema.org `WebApplication`), on every page;
   - `og-image.png`: the 1200×630 share card, rendered from `og/og-image.html` (the command to regenerate it is in that file);
   - `robots.txt` and `sitemap.xml`: only the welcome page is indexed; rooms stay out of search;
+  - `close.html`: the page after « Quitter », mounted over Jitsi's `static/close.html` and `close2.html`. With `config.enableClosePage` (in `custom-config.js`) Jitsi goes there as soon as it has left the room, instead of waiting 3 s on the welcome page. It offers « Rejoindre la réunion » and « Nouvelle réunion »;
   - `hashcode-logo.png`: the mark;
-  - `hashcode-branding.sh`: runs at each start and writes « HashCode Visio » and the tagline into Jitsi's translations and its PWA manifest.
+  - `hashcode-branding.sh`: runs at each start and writes « HashCode Meet » and the tagline into Jitsi's translations, its PWA manifest, and the English texts compiled into `app.bundle.min.js` (whose `?v=` it suffixes with `hc1` so browsers drop the cached one).
+- **`nginx-custom/`**, included in Jitsi's nginx server block: `lang/` and `manifest.json` are revalidated on each load (`no-cache`), so browsers never keep a « Jitsi Meet » copy.
 
   The stylesheet follows the class names of `jitsi/web:stable-11031`. **After bumping Jitsi, open the welcome page and check it.**
 

@@ -263,17 +263,21 @@ jobs:
             exit 1
           fi
 
-      - name: HashCode Visio replaces « Jitsi Meet »
+      - name: HashCode Meet replaces « Jitsi Meet »
         run: |
-          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/interface_config.js" | grep -q "APP_NAME = 'HashCode Visio'"
+          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/interface_config.js" | grep -q "APP_NAME = 'HashCode Meet'"
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/" > index.html
-          grep -q "<title>HashCode Visio" index.html
+          grep -q "<title>HashCode Meet" index.html
           grep -q 'property="og:image" content="https://visio.hashcode.digital/images/og-image.png"' index.html
           curl -sf --max-time 15 -o /dev/null "https://${VISIO_DOMAIN}/images/og-image.png"
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/robots.txt" | grep -q "^Sitemap: "
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/sitemap.xml" | grep -q "<loc>"
           curl -sf --max-time 15 -o /dev/null "https://${VISIO_DOMAIN}/images/hashcode-logo.png"
-          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/lang/main-fr.json" | grep -q '"headerTitle": "HashCode Visio"'
+          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/lang/main-fr.json" | grep -q '"headerTitle": "HashCode Meet"'
+          # English is compiled into the bundle: patched, under its own ?v=.
+          grep -q 'app.bundle.min.js?v=[0-9]*hc1"' index.html
+          # The page after « Quitter » (config.enableClosePage).
+          curl -sf --max-time 15 "https://${VISIO_DOMAIN}/static/close2.html" | grep -q "Vous avez quitté la réunion"
 
       - name: Slack notify success
         if: success()

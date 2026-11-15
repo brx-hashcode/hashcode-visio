@@ -1,9 +1,9 @@
-// HashCode Visio: the name, HashCode's mark and the welcome page.
+// HashCode Meet: the name, HashCode's mark and the welcome page.
 // docker-jitsi-meet appends this file to interface_config.js at start;
 // docker-compose.yml mounts it at /config/custom-interface_config.js.
 // The welcome page's look is in config/web/ (plugin.head.html and friends).
-interfaceConfig.APP_NAME = 'HashCode Visio';
-interfaceConfig.NATIVE_APP_NAME = 'HashCode Visio';
+interfaceConfig.APP_NAME = 'HashCode Meet';
+interfaceConfig.NATIVE_APP_NAME = 'HashCode Meet';
 interfaceConfig.PROVIDER_NAME = 'HashCode';
 
 // HashCode's mark, served by this server (config/web/hashcode-logo.png), in
