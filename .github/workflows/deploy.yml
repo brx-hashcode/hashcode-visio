@@ -275,7 +275,7 @@ jobs:
           curl -sf --max-time 15 -o /dev/null "https://${VISIO_DOMAIN}/images/hashcode-logo.png"
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/lang/main-fr.json" | grep -q '"headerTitle": "HashCode Meet"'
           # English is compiled into the bundle: patched, under its own ?v=.
-          grep -q 'app.bundle.min.js?v=[0-9]*hc1"' index.html
+          grep -q 'app.bundle.min.js?v=[0-9]*hc[0-9]*"' index.html
           # The page after « Quitter » (config.enableClosePage).
           curl -sf --max-time 15 "https://${VISIO_DOMAIN}/static/close2.html" | grep -q "Vous avez quitté la réunion"
 

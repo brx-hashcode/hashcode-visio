@@ -32,8 +32,11 @@ fi
 # welcome page's title and subtitle are patched there too (no-op once done).
 B=libs/app.bundle.min.js
 sed -i 's/"headerSubtitle":"Secure and high quality meetings","headerTitle":"Jitsi Meet"/"headerSubtitle":"Simple, secure video meetings, right in your browser.","headerTitle":"HashCode Meet"/' "$B"
-# The bundle is cached for a year by its ?v=: give the patched one its own
-# version, so browsers that kept Jitsi's fetch ours. Bump "hc1" when the patch
-# above changes.
-grep -q 'app.bundle.min.js?v=[0-9]*hc1"' index.html \
-  || sed -i 's/app\.bundle\.min\.js?v=\([0-9]*\)"/app.bundle.min.js?v=\1hc1"/' index.html
+# Translations are fetched by the bundle with no version in the URL, so a
+# browser that kept Jitsi's copy never asks again. Load them under ?v=, so
+# ours are new URLs. Bump HC_V whenever the texts above change.
+HC_V=hc2
+sed -i "s#\"lang/{{ns}}-{{lng}}.json\"#\"lang/{{ns}}-{{lng}}.json?v=${HC_V}\"#; s#\"lang/{{ns}}.json\"#\"lang/{{ns}}.json?v=${HC_V}\"#; s#\.json?v=hc[0-9]*\"#.json?v=${HC_V}\"#g" "$B"
+# The bundle itself is cached for a year by its ?v=: give the patched one its
+# own version, so browsers that kept an older one fetch ours.
+sed -i "s/app\.bundle\.min\.js?v=\([0-9]*\)\(hc[0-9]*\)\{0,1\}\"/app.bundle.min.js?v=\1${HC_V}\"/" index.html

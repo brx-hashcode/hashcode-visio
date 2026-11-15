@@ -39,7 +39,7 @@ All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi)
   - `robots.txt` and `sitemap.xml`: only the welcome page is indexed; rooms stay out of search;
   - `close.html`: the page after « Quitter », mounted over Jitsi's `static/close.html` and `close2.html`. With `config.enableClosePage` (in `custom-config.js`) Jitsi goes there as soon as it has left the room, instead of waiting 3 s on the welcome page. It offers « Rejoindre la réunion » and « Nouvelle réunion »;
   - `hashcode-logo.png`: the mark;
-  - `hashcode-branding.sh`: runs at each start and writes « HashCode Meet » and the tagline into Jitsi's translations, its PWA manifest, and the English texts compiled into `app.bundle.min.js` (whose `?v=` it suffixes with `hc1` so browsers drop the cached one).
+  - `hashcode-branding.sh`: runs at each start and writes « HashCode Meet » and the tagline into Jitsi's translations, its PWA manifest, and the English texts compiled into `app.bundle.min.js` (and versions the bundle and translation URLs with `hc2`, so browsers drop cached copies; bump `HC_V` in the script when these texts change).
 - **`nginx-custom/`**, included in Jitsi's nginx server block: `lang/` and `manifest.json` are revalidated on each load (`no-cache`), so browsers never keep a « Jitsi Meet » copy.
 
   The stylesheet follows the class names of `jitsi/web:stable-11031`. **After bumping Jitsi, open the welcome page and check it.**
