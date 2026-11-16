@@ -1,5 +1,7 @@
-// Captions in French only: Vosk transcribes, it doesn't translate, so no
-// « translate into » languages are offered.
+// Captions in French unless the page embedding the call names another
+// language (configOverwrite.transcription.preferredLanguage: French or
+// English, the two Vosk servers). Vosk transcribes, it doesn't translate, so
+// no « translate into » languages are offered.
 // docker-jitsi-meet appends this file to config.js at start;
 // docker-compose.yml mounts it at /config/custom-config.js.
 config.transcription.translationEnabled = false;
