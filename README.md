@@ -23,7 +23,8 @@ This repo only holds the visio stack.
 | `whiteboard` | `jitsi/excalidraw-backend:2026.10.0` | The whiteboard in the call. |
 | `etherpad` | `etherpad/etherpad:3.3.7` | « Document partagé » in the call. |
 | `transcriber` | `jitsi/jigasi:stable-11031` | Captions (« Sous-titres »): joins the call as a hidden participant when the business turns them on. |
-| `vosk`, `vosk-en` | built from `vosk/Dockerfile` (`kaldi-vosk-server` + `vosk-model-small-fr-0.22` and `vosk-model-small-en-us-0.15`), one container per language | French and English speech-to-text for the captions: the transcriber sends each voice to the server of the language its page declares. Nothing is saved. |
+| `whisper` | `jitsi/skynet` (CPU), model `base` | Speech-to-text for the captions and the interview transcript, in the language each page declares. Nothing is saved. |
+| `vosk`, `vosk-en` (unused, kept as a way back) | built from `vosk/Dockerfile` (`kaldi-vosk-server` + `vosk-model-small-fr-0.22` and `vosk-model-small-en-us-0.15`), one container per language | French and English speech-to-text for the captions: the transcriber sends each voice to the server of the language its page declares. Nothing is saved. |
 
 All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi) together.
 
