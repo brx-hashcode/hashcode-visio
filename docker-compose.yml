@@ -51,13 +51,21 @@ x-jitsi-env: &jitsi-env
   # Whiteboard (Excalidraw) and shared notes (Etherpad), proxied by jitsi-web.
   WHITEBOARD_COLLAB_SERVER_URL_BASE: http://whiteboard.meet.jitsi
   ETHERPAD_URL_BASE: http://etherpad.meet.jitsi:9001
-  # Captions (« Sous-titres »): Jigasi transcribes on Vosk, below. Nothing is
-  # saved; the text only reaches the people in the call.
+  # Captions (« Sous-titres »): Jigasi transcribes on Whisper (the `whisper`
+  # service below). Nothing is saved; the text only reaches the people in
+  # the call.
   ENABLE_TRANSCRIPTIONS: "1"
   JIGASI_TRANSCRIBER_PASSWORD: ${JIGASI_TRANSCRIBER_PASSWORD}
   # Jigasi refuses to start without it, even as a transcriber only.
   JIGASI_XMPP_PASSWORD: ${JIGASI_TRANSCRIBER_PASSWORD}
-  JIGASI_TRANSCRIBER_CUSTOM_SERVICE: org.jitsi.jigasi.transcription.VoskTranscriptionService
+  # Whisper: one model for every language, far closer to what is said than
+  # Vosk's small models, accents included. To go back to Vosk, put
+  # VoskTranscriptionService here: its two servers and their map are kept.
+  JIGASI_TRANSCRIBER_CUSTOM_SERVICE: org.jitsi.jigasi.transcription.WhisperTranscriptionService
+  # Jigasi appends the call's id. No token: the server only listens on this
+  # stack's own network (BYPASS_AUTHORIZATION below).
+  JIGASI_TRANSCRIBER_WHISPER_URL: ws://whisper.meet.jitsi:8000/streaming-whisper/ws
+  # Vosk, unused while Whisper transcribes (kept for a quick way back).
   # One Vosk server per language: Jigasi picks it by the language each
   # participant's page declares (the exact tag, hence the variants). A tag
   # missing here gets no captions at all, so add it with its server.
@@ -244,8 +252,8 @@ services:
           - etherpad.meet.jitsi
 
   # Captions: Jigasi joins the call as a hidden transcriber when the business
-  # turns « Sous-titres » on, and sends each voice to the Vosk server of the
-  # language its page declares (French or English).
+  # turns « Sous-titres » on, and sends each voice to Whisper with the
+  # language its page declares.
   transcriber:
     image: jitsi/jigasi:stable-11031
     container_name: visio-transcriber
@@ -258,10 +266,41 @@ services:
       - transcriber_config:/config
     depends_on:
       - prosody
+      - whisper
       - vosk
       - vosk-en
     networks:
       - visio
+
+  whisper:
+    # Jitsi's own speech server (Skynet, « streaming whisper »: faster-whisper
+    # behind a websocket), on the CPU. `base` keeps up with a live call here;
+    # `small` reads accents better but ran several seconds behind on 3 cores.
+    # The model (~150 MB) is downloaded from Hugging Face at the first start
+    # and kept in the volume.
+    image: jitsi/skynet:2026.11.0-cpu@sha256:4257656ee50a0d9738ad0e5c1cdf84e14fbde708cf712ca61fd197bb281c43df
+    container_name: visio-whisper
+    restart: unless-stopped
+    logging: *logging
+    # The image's own user cannot write to a fresh volume.
+    user: "0"
+    # Never the whole machine: the video bridge needs its share.
+    cpus: 3
+    environment:
+      ENABLED_MODULES: streaming_whisper
+      BYPASS_AUTHORIZATION: "true"
+      WHISPER_MODEL_NAME: base
+      WHISPER_DEVICE: cpu
+      WHISPER_COMPUTE_TYPE: int8
+      BEAM_SIZE: "2"
+      WHISPER_MODEL_PATH: /models
+      HF_HOME: /models/hf
+    volumes:
+      - whisper_models:/models
+    networks:
+      visio:
+        aliases:
+          - whisper.meet.jitsi
 
   vosk:
     # The Vosk server on the small French model (vosk/Dockerfile). The deploy
@@ -298,6 +337,7 @@ volumes:
   jicofo_config:
   jvb_config:
   transcriber_config:
+  whisper_models:
 
 networks:
   # Dokploy's Traefik network (created by Dokploy's install).
