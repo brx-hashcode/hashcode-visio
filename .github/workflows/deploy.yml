@@ -68,7 +68,7 @@ jobs:
         id: tag
         run: |
           h=$(find vosk -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-12)
-          echo "image=${VOSK_IMAGE}:small-fr-0.22-$h" >> "$GITHUB_OUTPUT"
+          echo "image=${VOSK_IMAGE}:small-fr-en-$h" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3

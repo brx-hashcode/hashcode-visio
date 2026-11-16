@@ -58,7 +58,16 @@ x-jitsi-env: &jitsi-env
   # Jigasi refuses to start without it, even as a transcriber only.
   JIGASI_XMPP_PASSWORD: ${JIGASI_TRANSCRIBER_PASSWORD}
   JIGASI_TRANSCRIBER_CUSTOM_SERVICE: org.jitsi.jigasi.transcription.VoskTranscriptionService
-  JIGASI_TRANSCRIBER_VOSK_URL: ws://vosk.meet.jitsi:2700
+  # One Vosk server per language: Jigasi picks it by the language each
+  # participant's page declares (the exact tag, hence the variants). A tag
+  # missing here gets no captions at all, so add it with its server.
+  JIGASI_TRANSCRIBER_VOSK_URL: >-
+    {"fr": "ws://vosk.meet.jitsi:2700", "fr-FR": "ws://vosk.meet.jitsi:2700",
+    "fr-CA": "ws://vosk.meet.jitsi:2700", "fr-BE": "ws://vosk.meet.jitsi:2700",
+    "fr-CH": "ws://vosk.meet.jitsi:2700",
+    "en": "ws://vosk-en.meet.jitsi:2700", "en-GB": "ws://vosk-en.meet.jitsi:2700",
+    "en-US": "ws://vosk-en.meet.jitsi:2700", "en-AU": "ws://vosk-en.meet.jitsi:2700",
+    "en-IN": "ws://vosk-en.meet.jitsi:2700"}
   JIGASI_TRANSCRIBER_ENABLE_SAVING: "0"
   # STUN/TURN from coturn below. The client always asks Prosody for them, and
   # TURN gets candidates on strict mobile or office networks through. On the
@@ -235,7 +244,8 @@ services:
           - etherpad.meet.jitsi
 
   # Captions: Jigasi joins the call as a hidden transcriber when the business
-  # turns « Sous-titres » on, and sends each voice to Vosk (French).
+  # turns « Sous-titres » on, and sends each voice to the Vosk server of the
+  # language its page declares (French or English).
   transcriber:
     image: jitsi/jigasi:stable-11031
     container_name: visio-transcriber
@@ -249,15 +259,16 @@ services:
     depends_on:
       - prosody
       - vosk
+      - vosk-en
     networks:
       - visio
 
   vosk:
-    # The Vosk server with the small French model (vosk/Dockerfile). The deploy
+    # The Vosk server on the small French model (vosk/Dockerfile). The deploy
     # builds it in GitHub Actions and the server pulls VOSK_IMAGE from GHCR;
     # `build` is only for a local `docker compose up --build`.
     build: ./vosk
-    image: ${VOSK_IMAGE:-hashcode-visio-vosk:small-fr-0.22}
+    image: ${VOSK_IMAGE:-hashcode-visio-vosk:small-fr-en}
     container_name: visio-vosk
     restart: unless-stopped
     logging: *logging
@@ -265,6 +276,20 @@ services:
       visio:
         aliases:
           - vosk.meet.jitsi
+
+  vosk-en:
+    # The same image, on its small English model.
+    image: ${VOSK_IMAGE:-hashcode-visio-vosk:small-fr-en}
+    container_name: visio-vosk-en
+    restart: unless-stopped
+    logging: *logging
+    command: ["python3", "./asr_server.py", "/opt/vosk-model-en"]
+    depends_on:
+      - vosk
+    networks:
+      visio:
+        aliases:
+          - vosk-en.meet.jitsi
 
 volumes:
   web_config:

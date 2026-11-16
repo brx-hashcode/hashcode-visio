@@ -23,12 +23,12 @@ This repo only holds the visio stack.
 | `whiteboard` | `jitsi/excalidraw-backend:2026.10.0` | The whiteboard in the call. |
 | `etherpad` | `etherpad/etherpad:3.3.7` | « Document partagé » in the call. |
 | `transcriber` | `jitsi/jigasi:stable-11031` | Captions (« Sous-titres »): joins the call as a hidden participant when the business turns them on. |
-| `vosk` | built from `vosk/Dockerfile` (`kaldi-vosk-server` + `vosk-model-small-fr-0.22`) | French speech-to-text for the captions. Nothing is saved. |
+| `vosk`, `vosk-en` | built from `vosk/Dockerfile` (`kaldi-vosk-server` + `vosk-model-small-fr-0.22` and `vosk-model-small-en-us-0.15`), one container per language | French and English speech-to-text for the captions: the transcriber sends each voice to the server of the language its page declares. Nothing is saved. |
 
 All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi) together.
 
 `config/` holds:
-- **`custom-config.js`** keeps the captions in French, hides the « translate into » list (Vosk doesn't translate), closes an embedded call at once when it ends, and sends a person who leaves straight to the close page.
+- **`custom-config.js`** keeps the captions in French unless the page embedding the call names English (`transcription.preferredLanguage`), hides the « translate into » list (Vosk doesn't translate), closes an embedded call at once when it ends, and sends a person who leaves straight to the close page.
 - **`custom-interface_config.js`** names the app « HashCode Meet », puts HashCode's mark in the call and on the welcome page (linking to hashcode.digital), and drops Jitsi's app-store footer.
 - **`etherpad-pad.css`** is Etherpad's skin stylesheet plus one rule hiding its « pad deletion token » box, which Etherpad 3 has no setting for.
 - **`web/`**, the welcome page in HashCode's look:
@@ -79,7 +79,7 @@ Follow **[DEPLOY.md](DEPLOY.md)**:
 Every push to `main`, or a manual run (**Actions → Deploy Visio → Run workflow**), runs these steps:
 
 1. **Validate** the compose file and the scripts. This also runs on pull requests.
-2. **Build Vosk** (the one image we build) in GitHub Actions and push it to GHCR as `hashcode-visio-vosk:small-fr-0.22-<hash of vosk/>`, with a registry build cache, as rabotka-backend does. When `vosk/` hasn't changed, that tag already exists and the build is skipped.
+2. **Build Vosk** (the one image we build) in GitHub Actions and push it to GHCR as `hashcode-visio-vosk:small-fr-en-<hash of vosk/>`, with a registry build cache, as rabotka-backend does. When `vosk/` hasn't changed, that tag already exists and the build is skipped.
 3. **Log in to Vault** (AppRole) and read `secret/apps/hashcode-visio`. A missing or empty required key fails the deploy instead of starting a server with no auth.
 4. **Copy** `docker-compose.yml`, `.env.example`, `config/` and `scripts/` to `~/hashcode-visio` on the VPS with rsync. There's no git checkout on the box, so nothing there can drift or conflict.
 5. **Write `.env`** from Vault (mode 600), check that `dokploy-network` exists, log in to GHCR with the run's token, `docker compose pull` (only changed layers download), log out, then `docker compose up -d --no-build --remove-orphans`. Nothing is built on the server.
