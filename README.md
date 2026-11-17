@@ -29,7 +29,7 @@ This repo only holds the visio stack.
 All images are pinned: bump them deliberately, the five Jitsi ones (with Jigasi) together.
 
 `config/` holds:
-- **`custom-config.js`** keeps the captions in French unless the page embedding the call names English (`transcription.preferredLanguage`), hides the « translate into » list (Vosk doesn't translate), closes an embedded call at once when it ends, and sends a person who leaves straight to the close page.
+- **`custom-config.js`** keeps the captions in French unless the page embedding the call names English (`transcription.preferredLanguage`), hides the « translate into » list (Vosk doesn't translate), closes an embedded call at once when it ends, sends a person who leaves straight to the close page, and lets phones join in the browser (no « download the app » page: deep linking off).
 - **`custom-interface_config.js`** names the app « HashCode Meet », puts HashCode's mark in the call and on the welcome page (linking to hashcode.digital), and drops Jitsi's app-store footer.
 - **`etherpad-pad.css`** is Etherpad's skin stylesheet plus one rule hiding its « pad deletion token » box, which Etherpad 3 has no setting for.
 - **`web/`**, the welcome page in HashCode's look:
