@@ -17,3 +17,11 @@ config.notifyOnConferenceDestruction = false;
 // close.html) as soon as the room is left, ~0.3 s. Without it, Jitsi shows
 // « Merci d'avoir utilisé… » and waits 3 s before going back to the welcome page.
 config.enableClosePage = true;
+
+// On a phone, join in the browser. With deep linking on, Jitsi replaces the
+// call on mobile (and inside Rabotka's embedded call) with a page sending the
+// person to the Jitsi Meet app store. `deeplinking.disabled` is the current
+// setting; `disableDeepLinking` the older one, which jitsi/web still writes
+// into config.js above — both, so neither turns it back on.
+config.disableDeepLinking = true;
+config.deeplinking = { ...(config.deeplinking || {}), disabled: true };
